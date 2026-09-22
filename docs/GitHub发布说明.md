@@ -1,23 +1,26 @@
 # CourtLens GitHub 发布说明
 
-版本 v2.1，2026-09-22。
+版本 v3.0，2026-09-22。
 
 - 源码：https://github.com/dingyucanada/courtlens
-- 在线演练：https://dingyucanada.github.io/courtlens/
-- 产品与 PPT：https://github.com/dingyucanada/courtlens/releases/latest
+- Studio 工作室：https://dingyucanada.github.io/courtlens/
+- 证据演示：https://dingyucanada.github.io/courtlens/demo.html
+- 发布包：https://github.com/dingyucanada/courtlens/releases/latest
 
-## 两种运行形态
+## 运行形态
 
-在线版是 GitHub Pages 静态演练，提供固定合成视频、双视角、证据定位、指标比较和分析下载。数据与规则回答由正式 Python 引擎构建为 JSON；页面不调用云模型。
+GitHub Pages 现为可用的单用户浏览器工作室，支持项目创建、视频与 CSV/JSON 导入、复核、剪辑编排、报告与 WebM 成片。项目、版本历史和视频保存在当前浏览器 IndexedDB，数据不会自动同步到其他设备或原 Python 工作区。定期下载 JSON 备份，并另行保管原视频。
 
-完整产品在本机运行，支持用户视频、数据导入、持久项目、版本历史、人工标注与异步成片任务。SQLite 数据库和用户视频留在本机，不随代码提交。Pages 不能运行 Python 服务，因此没有把本机编辑按钮假装成公网服务。
+原证据演示保留于 demo.html。其固定合成视频、双视角、证据定位与分析下载由正式 Python 引擎构建为 JSON，不调用云模型，不代表真实 NBA 模型准确率。
 
-## 维护
+原本机 Python 服务保留独立 SQLite 工作区与 FFmpeg 精确 MP4 成片。启动后 /studio/ 是浏览器工作室，/projects.html 是本机服务项目库；两套工作区不自动互通。公网静态网站不包含 Python 服务、账号系统或云端数据库。
 
-修改 `site/` 或分析引擎后运行 README 的测试，向 `main` 推送会触发 Pages 构建与部署。另一个 Product checks 工作流在 Linux 运行完整测试集，系统语音属于 macOS 专有能力，Linux 对此项显式跳过，不能算作跨平台语音验收。
+## 发布和维护
 
-新版演示文稿保存为 `docs/CourtLens-product-deck.pptx`，网站构建时复制为 `presentation.pptx`，下载按钮自动启用。演示图表中的合成数据不代表真实 NBA 准确率，详细来源见图表脚注、讲者备注与方法文档。
+修改 studio/、site/ 或分析引擎后运行 README 中的检查。推送 main 会触发 Pages 构建与部署。Product checks 工作流在 Linux 运行完整检查；系统语音属于 macOS 专有能力，Linux 对此项显式跳过。
 
-发布目录采用白名单检查，拒绝无关残留或符号链接。不要把密钥、`.env`、`workspace/`、用户视频、内部测试日志或赛事未公开数据加入仓库。GitHub Actions 使用平台提供的短期令牌，源码没有嵌入凭据。
+现有 docs/CourtLens-product-deck.pptx 为 v2.1 图表版演示文稿；它与 Studio v3 新增流程的范围不同，未冒称 v3 路演稿。新版系统说明见 Studio使用手册.md，真实测试范围见 Studio验收报告.md。
 
-官方机制参考：https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
+浏览器成片是无音频 WebM、最多 180 秒、按播放时间录制；录制需要前台活动标签页。MediaRecorder 容器可能不包含有限时长或完整寻址索引，精确剪辑和音频交付请使用本机 FFmpeg 路线。
+
+发布目录采用白名单检查，不包括测试页面、用户视频、工作区、密钥或临时日志。GitHub Actions 使用平台短期令牌，源码不嵌入凭据。

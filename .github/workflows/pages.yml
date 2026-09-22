@@ -23,7 +23,7 @@ jobs:
       - name: Check public evidence and browser logic
         run: |
           python tools/test_site.py
-          node --test site/logic.test.mjs
+          node --test site/logic.test.mjs studio/domain.test.mjs studio/export.test.mjs studio/ui-boundaries.test.mjs
       - name: Build static site
         run: python tools/build_site.py --output site-dist --presentation docs/CourtLens-product-deck.pptx
       - uses: actions/configure-pages@v5

@@ -23,7 +23,7 @@ from core.workspace_routes import WorkspaceRoutes, Response, FileResponse
 from core.validation import ValidationError, validate_dataset
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "2.0.0"
+VERSION = "3.0.0"
 MAX_BODY_BYTES = 8 * 1024 * 1024
 
 
@@ -101,7 +101,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def serve_static(self, route):
         decoded = unquote(route)
-        if decoded in ("", "/"):
+        if decoded == "/studio":
+            self.send_response(302)
+            self.send_header("Location", "/studio/")
+            self.send_header("Content-Length", "0")
+            self.security_headers()
+            self.end_headers()
+            return
+        if decoded.startswith("/studio/"):
+            directory, relative = ROOT / "site-dist", decoded[len("/studio/"):] or "index.html"
+        elif decoded in ("", "/"):
             directory, relative = ROOT / "web", "index.html"
         elif decoded.startswith("/media/"):
             directory, relative = ROOT / "media", decoded[len("/media/"):]
@@ -116,7 +125,7 @@ class Handler(BaseHTTPRequestHandler):
             target.relative_to(directory.resolve())
         except (ValueError, OSError):
             return self.send_json({"error": "无效文件路径。"}, 404)
-        allowed = {".html", ".css", ".js", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico", ".mp4", ".webm", ".vtt", ".woff", ".woff2", ".csv"}
+        allowed = {".html", ".css", ".js", ".mjs", ".pptx", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico", ".mp4", ".webm", ".vtt", ".woff", ".woff2", ".csv"}
         if not target.is_file() or target.suffix.lower() not in allowed:
             return self.send_json({"error": "文件不存在。"}, 404)
         return self.serve_file(target)

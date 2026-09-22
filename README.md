@@ -1,16 +1,26 @@
-# CourtLens · 观赛透镜
+# CourtLens Studio · 篮球复盘与内容制作系统
 
-**篮球证据工作台：从一个回合，看懂画面、指标与判断之间的关系。**
+![CourtLens Studio 片单制作](docs/images/studio-playlist.png)
 
-[打开在线演练](https://dingyucanada.github.io/courtlens/) · [下载产品与新版 PPT](https://github.com/dingyucanada/courtlens/releases/latest) · [运行说明](#启动与入口)
+**从比赛素材到逐回合复核、分析、片单与交付，在一个单用户工作室里完成。**
 
-![CourtLens 复盘工作台](docs/images/replay-nba.png)
+[打开 Studio](https://dingyucanada.github.io/courtlens/) · [查看证据演示](https://dingyucanada.github.io/courtlens/demo.html) · [下载完整产品](https://github.com/dingyucanada/courtlens/releases/latest) · [Studio 使用说明](docs/Studio使用手册.md)
 
-在线版免安装，提供 36 秒合成演练、3 个回合、双视角解说、同步标注、数据图表、证据问答和分析下载。完整本机版提供视频导入、SQLite 项目历史、人工标注、复核与视频导出。两者使用同一个证据分析引擎。NBA 深蓝、红、白仅作为视觉配色，CourtLens 是独立作品。
+## v3.0：网页也能实际工作
 
-当前为 v2.1，本机产品采用单用户模式。可从自己的视频建立项目，导入回合 CSV 或标准 JSON，编辑并复核回合，保存版本历史，添加人工画面标注，在后台导出。项目视频会复制到本机工作区，刷新页面或重启服务后可以继续使用。
+公开网页已从固定一页演示升级为可保存项目的多页面应用。包含工作总览、比赛项目、回合复核、数据分析、片单制作、报告交付和存储设置。
 
-正式 NBA 赛题视频和数据尚未发放。本包的内置演练为合成素材；它检验软件流程，不证明真实 NBA 战术识别准确率。云端工具规划器尚未实调，Windows 锁分支仅做模拟测试、未实机验收。全部最终测试及浏览器结果以 [最终验收报告](docs/最终验收报告.md) 为准。
+- **自己的素材：** 导入浏览器可播放的视频，读取时长、尺寸与 SHA-256，保存视频 Blob；导入 CSV / JSON，最多 2,000 个回合，或手工逐条标记。
+- **真实复核：** 校正出手与结果时刻、球员、战术标签、笔记和坐标；保存修订历史、恢复旧版；跨标签页冲突拒绝覆盖；视频和内容变化撤销复核。
+- **分析决策：** 球员、标签、结果筛选联动 FG%、eFG%、已记录得分、未知结果与输入期望得分；仅绘制实际提供坐标的投篮图。
+- **内容制作：** 片段选择、排序、入出点裁切、顺序预览；批准项目后实时录制真实无声 WebM，单次最长 180 秒。
+- **交付和备份：** 下载独立可打印 HTML 报告、CSV、按片单拼接的 VTT、项目 JSON 备份。备份不包含原视频，须另行保存。
+
+Studio 使用当前浏览器的 IndexedDB，是本机数据、单用户应用；不提供账号、云同步或多人权限。发布到 GitHub Pages 的是应用文件，用户视频不会上传。相同浏览器、相同来源地址下可继续工作；线上与 localhost、不同端口和不同浏览器的存储互相独立。首次进入不制造项目，点击「载入合成演练」可完整体验。
+
+本机 Python/SQLite/FFmpeg 工作台仍提供独立的持久工程、人工画面标注、后台 MP4 任务和可选 macOS 配音。两种工作区不自动同步；Studio 的备份用于 Studio，不冒充旧工作台 JSON。现有 14 页路演文件来自 v2.1，v3 的实际能力与验收以本 README 和 [Studio 验收报告](docs/Studio验收报告.md) 为准。
+
+NBA 深蓝、红、白为视觉配色，CourtLens 为独立作品。内置素材全部合成，功能验收不代表真实 NBA 预测或自动战术识别精度。正式赛方素材、规则及云模型调用仍待相应实证。
 
 ## 启动与入口
 
@@ -20,7 +30,7 @@
 python3 tools/launch.py --port 8765
 ```
 
-打开 [项目工作区](http://127.0.0.1:8765/projects.html)。[复盘台](http://127.0.0.1:8765/) 保留原演练入口；请从项目页点击“打开复盘”查看自己的持久项目。随包的 `启动工作台.command` 与 `启动工作台.bat` 会尝试从已知位置选择已安装且具备 Pillow 的渲染解释器，不自动安装依赖；平台验证范围见最终报告。停止服务按 Ctrl+C。
+启动器会先构建 Studio。打开 [Studio 工作室](http://127.0.0.1:8765/studio/) 使用新版；[FFmpeg / SQLite 工作区](http://127.0.0.1:8765/projects.html) 使用原本机工作流。[复盘台](http://127.0.0.1:8765/) 保留原演练入口；请从项目页点击“打开复盘”查看自己的持久项目。随包的 `启动工作台.command` 与 `启动工作台.bat` 会尝试从已知位置选择已安装且具备 Pillow 的渲染解释器，不自动安装依赖；平台验证范围见最终报告。停止服务按 Ctrl+C。
 
 服务只绑定 `127.0.0.1`，无前端构建步骤。先点击项目页右上角“本机功能”查看依赖。后端使用 Python 标准库；视频持久导入需要 FFprobe，成片导出还需要 FFmpeg 及渲染解释器中的 Pillow。Python 环境和外部工具版本以最终报告为准，Pillow 要求见 [requirements-media.txt](requirements-media.txt)。
 
@@ -32,7 +42,7 @@ python3 server.py --port 8765 --render-python /absolute/path/to/python
 
 该路径应替换为本机真实解释器路径。也可通过 `COURTLENS_RENDER_PYTHON` 配置。缺少依赖时不会静默声称导出成功；先补齐依赖并重启服务，再重试。
 
-## 推荐使用顺序
+## 原本机工作台的使用顺序
 
 1. **创建项目。** 选择“从视频开始”“导入回合表”或“高级数据”，填写真实来源。也可用全合成演练体验。
 2. **校正回合。** 填写视频秒数、投篮球员和投篮分值。新建占位回合不是自动识别结果；未知指标留空。
@@ -42,7 +52,7 @@ python3 server.py --port 8765 --render-python /absolute/path/to/python
 
 默认 MP4 包含画面叠加与字幕、没有音轨。macOS 本机 `say` 可用时，可选离线中文配音；它朗读已编译的同步字幕，不调用云模型。两种模式都不保留原视频音轨。配音不可用、过密或失败时明确报错，不会把无声中间视频冒充配音成片。Windows 当前不提供此配音能力，实际平台结果见最终报告。
 
-## 保存位置与冲突
+## 原本机工作台的保存位置与冲突
 
 默认数据位于本目录下 `workspace/`：项目及历史存在 `workspace.sqlite3`，已导入视频位于 `media/`，导出记录和结果位于 `jobs/`。可用 `--workspace /absolute/path/to/workspace` 指定目录。它不会被静态文件服务直接暴露；浏览器通过受控项目接口读取媒体。
 
@@ -52,7 +62,7 @@ python3 server.py --port 8765 --render-python /absolute/path/to/python
 
 备份应先停止服务，再复制整个工作区。只复制数据库或只有成片都不足以完整恢复项目。当前没有自动云备份、多人协作、账号认证或公网部署功能；只在可信本机环境使用。详见 [产品架构与运维](docs/产品架构与运维.md)。
 
-## 数据与能力边界
+## 原本机工作台的数据与能力边界
 
 - 每个视频最大 512 MiB；服务端核对文件格式、尺寸、时长及 SHA-256。浏览器能否解码仍取决于实际编码。
 - CSV 支持最多 200 个回合，时间必须已经映射成视频秒数；错误定位到 CSV 记录结束的物理行。
@@ -91,12 +101,12 @@ python3 tests/media_export_checks.py
 
 ## 网站构建与 GitHub 发布
 
-`site/` 是公开演练站源码，`web/` 是本机完整产品界面。GitHub Pages 提供静态网页，本机 Python 服务和用户工作区不上传至 Pages。
+`studio/` 是 v3 的浏览器工作室，`site/` 保留证据演示，`web/` 是 Python 本机工作台。构建结果根页为 Studio，`demo.html` 为演示。GitHub Pages 提供应用静态文件；项目与视频由浏览器保存在本机，Python 服务和用户工作区不上传至 Pages。
 
 ```sh
 python3 tools/build_site.py --output ../site-dist --presentation docs/CourtLens-product-deck.pptx
 python3 tools/test_site.py
-node --test site/logic.test.mjs
+node --test site/logic.test.mjs studio/domain.test.mjs studio/export.test.mjs studio/ui-boundaries.test.mjs
 ```
 
 构建器直接调用 `core.engine` 生成双视角分析与 42 份证据回答，并核对视频 SHA-256。输出目录只允许已知发布文件；发现无关文件或符号链接会停止，防止意外上传。静态站不调用外部模型，也不上传浏览器操作。

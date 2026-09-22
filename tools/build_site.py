@@ -22,18 +22,23 @@ def build(output, presentation=None, repo='dingyucanada/courtlens'):
     if output == ROOT or ROOT in output.parents and output.name not in ('site-dist','dist'):
         raise ValueError('Use a separate site-dist or dist directory')
     # Fail closed rather than deleting or accidentally deploying unrelated files.
-    allowed_files = {'index.html','styles.css','app.js','logic.mjs','favicon.svg',
+    allowed_files = {'index.html','demo.html','styles.css','app.js','logic.mjs','favicon.svg',
+        'studio/styles.css','studio/app.mjs','studio/domain.mjs','studio/store.mjs','studio/export.mjs',
         'data/analysis.json','data/demo.json','media/demo.mp4',
         'media/narrated-demo.mp4','media/annotated-demo.vtt',
         'presentation.pptx','.nojekyll','manifest.json'}
     if output.exists():
         for entry in output.rglob('*'):
             relative = entry.relative_to(output).as_posix()
-            if entry.is_symlink() or (entry.is_dir() and relative not in {'data','media'}) or (entry.is_file() and relative not in allowed_files):
+            if entry.is_symlink() or (entry.is_dir() and relative not in {'data','media','studio'}) or (entry.is_file() and relative not in allowed_files):
                 raise ValueError(f'Unexpected publication output entry: {relative}; choose a clean directory')
     output.mkdir(parents=True, exist_ok=True)
     for name in ('index.html','styles.css','app.js','logic.mjs','favicon.svg'):
-        shutil.copy2(ROOT/'site'/name, output/name)
+        shutil.copy2(ROOT/'site'/name, output/('demo.html' if name=='index.html' else name))
+    shutil.copy2(ROOT/'studio/index.html',output/'index.html')
+    (output/'studio').mkdir(exist_ok=True)
+    for name in ('styles.css','app.mjs','domain.mjs','store.mjs','export.mjs'):
+        shutil.copy2(ROOT/'studio'/name, output/'studio'/name)
     data_dir, media_dir = output/'data', output/'media'
     data_dir.mkdir(exist_ok=True); media_dir.mkdir(exist_ok=True)
     dataset = validate_dataset(json.loads((ROOT/'data/demo.json').read_text()))

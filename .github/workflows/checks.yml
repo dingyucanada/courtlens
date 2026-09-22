@@ -25,6 +25,6 @@ jobs:
       - name: Product tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Browser logic tests
-        run: node --test tests/*.test.cjs site/logic.test.mjs
+        run: node --test tests/*.test.cjs site/logic.test.mjs studio/domain.test.mjs studio/export.test.mjs studio/ui-boundaries.test.mjs
       - name: Public artifact and evidence tests
         run: python tools/test_site.py

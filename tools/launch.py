@@ -14,9 +14,11 @@ def choose_renderer():
  return sys.executable
 if __name__=='__main__':
  renderer=choose_renderer()
+ from build_site import build
+ build(ROOT/'site-dist', ROOT/'docs/CourtLens-product-deck.pptx')
  parser=argparse.ArgumentParser(add_help=False)
  parser.add_argument('--port',type=int,default=8765)
  parser.add_argument('--workspace',default=str(ROOT/'workspace'))
  options,_=parser.parse_known_args()
- print(f'CourtLens 本机项目工作区：http://127.0.0.1:{options.port}/projects.html\n停止服务请按 Ctrl+C。项目保存在 {options.workspace}。',flush=True)
+ print(f'CourtLens Studio：http://127.0.0.1:{options.port}/studio/\nFFmpeg / SQLite 本机工作区：http://127.0.0.1:{options.port}/projects.html\n停止服务请按 Ctrl+C。项目保存在 {options.workspace}。',flush=True)
  os.execv(sys.executable,[sys.executable,str(ROOT/'server.py'),'--render-python',renderer,*sys.argv[1:]])
