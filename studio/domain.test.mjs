@@ -132,3 +132,45 @@ test('actual bundled demo converts with honest synthetic provenance and safe por
   assert.equal(p.plays.length,3);assert.equal(p.video.url,'media/demo.mp4');assert.match(p.source,/合成/);assert(p.plays.every(p=>p.reviewed===false&&p.x===null));assert.deepEqual(errors(p),[]);
   const restored=readBackup(JSON.stringify(projectBackup(p)));assert.equal(restored.video.url,'media/demo.mp4');assert.equal(restored.video.needsReattach,undefined);
 });
+
+test('advanced source records and metric semantics survive import and backup without silently entering statistics',async()=>{
+  const dataset=JSON.parse(await readFile(new URL('../data/demo.json',import.meta.url),'utf8'));
+  const imported=parse(dataset);assert(imported.issues.some(i=>i.code==='EVIDENCE_ARCHIVED'));
+  assert.deepEqual(imported.plays[0].sourceEvidence.record,dataset.possessions[0]);
+  assert.deepEqual(imported.plays[0].sourceEvidence.metricSemantics,dataset.metric_semantics);
+  const p=demoProject(dataset);p.plays[0].notes='New review';
+  const restored=readBackup(JSON.stringify(projectBackup(p)));
+  assert.deepEqual(restored.plays[0].sourceEvidence.record,dataset.possessions[0]);
+  assert.equal(restored.plays[0].notes,'New review');
+  assert.equal(summarize(restored.plays).gravity,undefined);
+  assert.equal(restored.plays[0].x,null);
+});
+
+test('canonical JSON reports unknown fields and rejects malformed source evidence',()=>{
+  const r=parse([raw({mysteryMetric:42})]);assert(r.issues.some(i=>i.code==='IGNORED_FIELDS'));
+  assert.throws(()=>parse([raw({sourceEvidence:{record:[],metricSemantics:{}}})]),/sourceEvidence/);
+  const evidence={record:{metrics:{gravity:1.8},notes:'<img src=x onerror=alert(1)>'},metricSemantics:{gravity:'source-defined'}};
+  assert.deepEqual(parse([raw({sourceEvidence:evidence})]).plays[0].sourceEvidence,evidence);
+});
+
+test('large valid project backups can exceed the smaller single-import limit',()=>{
+  const p=project();p.plays[0].sourceEvidence={record:{chunks:Array(90).fill('x'.repeat(100000))},metricSemantics:{}};
+  const text=JSON.stringify(projectBackup(p));assert(text.length>MAX_IMPORT_BYTES);
+  assert.equal(readBackup(text).plays[0].sourceEvidence.record.chunks.length,90);
+  p.plays[0].sourceEvidence.record.chunks=Array(340).fill('x'.repeat(100000));
+  assert(errors(p).some(i=>i.code==='PROJECT_SIZE'));assert.throws(()=>projectBackup(p),/32 MiB/);
+});
+
+test('repeated metric semantics are budgeted before source evidence expands',()=>{
+  const dataset={metric_semantics:{description:'x'.repeat(350000)},possessions:Array.from({length:100},(_,i)=>({...raw(),id:`p${i}`}))};
+  assert(JSON.stringify(dataset).length<MAX_IMPORT_BYTES);
+  assert.throws(()=>parse(dataset),/16 MiB import budget/);
+});
+
+test('backup envelope does not reject valid project evidence at the nesting limit',()=>{
+  const p=project();let nested={value:'leaf'};for(let i=0;i<35;i++)nested={child:nested};
+  p.plays[0].sourceEvidence={record:{nested},metricSemantics:{}};
+  assert.deepEqual(errors(p),[]);
+  const restored=readBackup(JSON.stringify(projectBackup(p)));
+  assert.deepEqual(restored.plays[0].sourceEvidence,p.plays[0].sourceEvidence);
+});

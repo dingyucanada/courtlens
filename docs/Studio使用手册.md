@@ -35,8 +35,8 @@ CSV 基本列：`id,start,end,shotTime,resultTime,shooter,team,points,made,tag,n
 - 缺少 shotTime/resultTime 时暂用回合结束时刻，并明确提示人工校正；不会声称自动对齐。
 - `xfg` 为来源提供的 0–1 命中概率；`x,y` 为半场归一化坐标，必须同时填写或同时留空。
 - CSV 支持引号、逗号、换行、BOM；导出的文本做表格公式注入防护。
-- JSON 接受 Studio 回合数组或 `{plays: [...]}`，也兼容原 CourtLens `possessions` 数据格式的事件转换。轨迹坐标不会冒充半场投篮坐标。
-- 项目备份 JSON 是单独格式，请从「导入项目备份」导入。
+- JSON 接受 Studio 回合数组或 `{plays: [...]}`，也兼容原 CourtLens `possessions` 数据格式的事件转换。转换会提示能力范围；逐回合原记录（含 Gravity、Leverage、轨迹和标注）及指标语义保存为只读证据，在回合复核页可展开查看，项目 JSON 备份包含它们。修改复盘字段不会改写原始记录。当前统计、CSV、HTML 报告和 WebM 不使用这些高级字段，轨迹坐标也不会冒充半场投篮坐标。完整比赛、球员等顶层上下文需保留原 JSON，使用原证据工作台。
+- 回合文件上限 8 MiB；高级语义展开后的导入预算为 16 MiB，超限须拆分文件；项目结构数据上限 32 MiB，备份导入上限 64 MiB，不含视频。项目备份 JSON 是单独格式，请从「导入项目备份」导入。
 
 ## 保存、恢复与备份
 

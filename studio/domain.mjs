@@ -1,6 +1,7 @@
 /** Browser-only domain model. Imported values are data, never markup or code. */
 export const MAX_PLAYS = 2000;
 export const MAX_IMPORT_BYTES = 8 * 1024 * 1024;
+export const MAX_BACKUP_BYTES = 64 * 1024 * 1024;
 const FIELDS = ['id','start','end','shooter','team','points','made','shotTime','resultTime','tag','notes','xfg','x','y','source'];
 const FORBIDDEN = new Set(['__proto__', 'prototype', 'constructor']);
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -41,17 +42,17 @@ function fail(issues, label = 'Invalid data') {
     error.code = 'VALIDATION'; error.issues = issues; throw error;
   }
 }
-function readJSON(text) {
-  checkText(text);
+function readJSON(text, limit = MAX_IMPORT_BYTES, wrapperDepth = 0) {
+  checkText(text, limit);
   let result;
   try { result = JSON.parse(text.replace(/^\uFEFF/, '')); }
   catch (error) { throw new Error(`Invalid JSON: ${error.message}`); }
-  assertData(result);
+  assertData(result, 'data', new Set(), -wrapperDepth);
   return result;
 }
-function checkText(text) {
+function checkText(text, limit = MAX_IMPORT_BYTES) {
   if (typeof text !== 'string') throw new Error('Import must be text.');
-  if (new TextEncoder().encode(text).length > MAX_IMPORT_BYTES) throw new Error('Import exceeds the 8 MiB limit.');
+  if (new TextEncoder().encode(text).length > limit) throw new Error(`Import exceeds the ${limit / 1024 / 1024} MiB limit.`);
   if (!text.trim()) throw new Error('Import is empty.');
 }
 function string(value, field, fallback = '') {
@@ -90,6 +91,7 @@ function validatePlays(plays, duration = null) {
     if (![true,false,null].includes(play.made)) add('error', 'RESULT', 'made must be true, false, or null (unknown).');
     else if (play.made === null) add('warning', 'UNKNOWN_RESULT', 'outcome is unknown and excluded from shooting percentages.');
     if (typeof play.reviewed !== 'boolean') add('error', 'REVIEW_STATE', 'reviewed must be a boolean.');
+    if (has(play,'sourceEvidence') && (!record(play.sourceEvidence) || !record(play.sourceEvidence.record) || !record(play.sourceEvidence.metricSemantics))) add('error','SOURCE_EVIDENCE','sourceEvidence must contain a raw record and metricSemantics objects.');
     if (play.xfg !== null && (!finite(play.xfg) || play.xfg < 0 || play.xfg > 1)) add('error', 'XFG', 'xfg must be null or a probability between 0 and 1.');
     const xAbsent = play.x === null, yAbsent = play.y === null;
     if (xAbsent !== yAbsent) add('error', 'COORDINATE_PAIR', 'x and y must both be supplied or both be null.');
@@ -104,6 +106,8 @@ export function validateProject(project) {
   try { assertData(project); }
   catch (error) { return [issue('error', 'UNSAFE_DATA', error.message)]; }
   if (!record(project)) return [issue('error', 'PROJECT_TYPE', 'Project must be an object.')];
+  // Keep every valid saved project small enough for a portable, re-importable backup.
+  if (new TextEncoder().encode(JSON.stringify(project)).length > MAX_BACKUP_BYTES / 2) return [issue('error','PROJECT_SIZE','Project data exceeds 32 MiB; split it into smaller projects.')];
   const add = (severity, code, message) => issues.push(issue(severity, code, message));
   if (project.schemaVersion !== 1) add('error', 'SCHEMA_VERSION', 'Unsupported project schemaVersion; expected 1.');
   if (!nonempty(project.id) || project.id.length > 200) add('error', 'PROJECT_ID', 'A project ID of at most 200 characters is required.');
@@ -219,10 +223,20 @@ export function parseImport(text, { format = 'json', duration = null, source = '
     const data = readJSON(text);
     if (Array.isArray(data)) rows = data;
     else if (record(data) && Array.isArray(data.plays)) rows = data.plays;
-    else if (record(data) && Array.isArray(data.possessions)) { rows = data.possessions; dataset = data; }
+    else if (record(data) && Array.isArray(data.possessions)) {
+      rows = data.possessions; dataset = data;
+      issues.push(issue('warning','EVIDENCE_ARCHIVED','Original per-play records, including Gravity, Leverage, tracks and annotations, are retained as source evidence with metric semantics. Studio statistics and WebM do not render or recompute these advanced fields. Keep the original file for full dataset context and the original evidence workbench.'));
+    }
     else throw new Error('JSON must contain a plays array, a possessions array, or be an array of plays.');
   } else throw new Error('Import format must be csv or json.');
   if (!rows.length || rows.length > MAX_PLAYS) throw new Error(`Import must contain 1–${MAX_PLAYS} plays.`);
+  if (dataset) {
+    if (dataset.metric_semantics !== undefined && !record(dataset.metric_semantics)) throw new Error('metric_semantics must be an object.');
+    // Budget repeated metadata before cloning it, not after the expanded project exists.
+    const encoder = new TextEncoder();
+    const projectedBytes = 2 * encoder.encode(text).length + rows.length * encoder.encode(JSON.stringify(dataset.metric_semantics || {})).length;
+    if (projectedBytes > MAX_BACKUP_BYTES / 4) throw new Error('Expanded source evidence exceeds the 16 MiB import budget. Split the dataset into smaller files.');
+  }
   const datasetSource = dataset?.provenance?.source === undefined ? '' : string(dataset.provenance.source, 'provenance.source');
   const plays = rows.map((row, index) => {
     try {
@@ -244,6 +258,11 @@ export function parseImport(text, { format = 'json', duration = null, source = '
       const inheritedSource = [source || datasetSource, ...refs].filter(Boolean).join(' · ');
       const notes = dataset && Array.isArray(row.notes) ? row.notes.map(note => string(note, 'notes')).join('\n') : string(row.notes, 'notes');
       const play = {id:playId,start,end,shotTime:missingShot ? end : numeric(shotValue,'shotTime'),resultTime:missingResult ? end : numeric(resultValue,'resultTime'),shooter:string(row.shooter,'shooter'),team:string(row.team ?? (dataset ? row.offense : undefined),'team'),points:numeric(row.points,'points'),made:result(has(row,'made') ? row.made : row.result),tag:string(row.tag ?? (dataset ? row.title : undefined),'tag'),notes,reviewed:false,xfg:numeric(xfg,'xfg',true),x:numeric(row.x,'x',true),y:numeric(row.y,'y',true),source:string(row.source,'source').trim() || inheritedSource};
+      if (dataset) play.sourceEvidence = {record:structuredClone(row),metricSemantics:structuredClone(dataset.metric_semantics || {})};
+      else if (has(row,'sourceEvidence')) play.sourceEvidence = structuredClone(row.sourceEvidence);
+      const known = new Set([...FIELDS,'shot_time','result_time','result','reviewed','sourceEvidence']);
+      const unknown = dataset ? [] : Object.keys(row).filter(key=>!known.has(key));
+      if (unknown.length) issues.push(issue('warning','IGNORED_FIELDS',`Unrecognized JSON fields were not imported: ${unknown.join(', ')}.`,playId));
       if (play.xfg === null) issues.push(issue('warning','MISSING_XFG','No xFG probability supplied; excluded from expected-points totals.',playId));
       return play;
     } catch (error) { issues.push(issue('error','IMPORT_ROW',`Row ${index + 1}: ${error.message}`)); return null; }
@@ -309,7 +328,7 @@ export function projectBackup(project) {
   return {kind:'courtlens-project',schemaVersion:1,project:portableProject(project)};
 }
 export function readBackup(text) {
-  const backup = readJSON(text);
+  const backup = readJSON(text, MAX_BACKUP_BYTES, 1);
   if (!record(backup) || backup.kind !== 'courtlens-project' || backup.schemaVersion !== 1 || !record(backup.project)) throw new Error('Not a supported CourtLens project backup (schemaVersion 1).');
   // Validate the supplied revision before generating replacement identity or clearing approval.
   fail(validateProject(backup.project),'Invalid backup');
