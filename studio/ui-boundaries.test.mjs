@@ -23,7 +23,7 @@ function harness(){
   const document={querySelector:s=>nodes.get(s)||null,querySelectorAll:s=>s.split(',').map(key=>nodes.get(key)).filter(Boolean),addEventListener:(type,fn)=>add(docListeners,type,fn),createElement(tag){assert.equal(tag,'video');pendingVideo={...node(),duration:15,videoWidth:1280,videoHeight:720};return pendingVideo;}};
   const window={history,scrollTo(){},addEventListener:(type,fn)=>add(winListeners,type,fn)};
   const localStorage={getItem(){return null;},setItem(){}};
-  const app=new Function('deps',`const {createProject,demoProject,validateProject,parseImport,summarize,toCSV,projectBackup,readBackup,id,makeReport,makeVTT,recordPlaylist,StudioStore,document,window,location,localStorage,setTimeout,clearTimeout}=deps;\n${source}\nreturn {state,field,playForm,sourceEvidenceHTML,playlistView,runAction,navigate,attachVideo,bindVideo,render,setBusy,setRender(fn){render=fn;}};`)({...domain,...exporter,StudioStore:FakeStore,document,window,location,localStorage,setTimeout:()=>1,clearTimeout:()=>{}});
+  const app=new Function('deps',`const {createProject,demoProject,validateProject,parseImport,summarize,playerKey,toCSV,projectBackup,readBackup,id,makeReport,makeVTT,recordPlaylist,StudioStore,document,window,location,localStorage,setTimeout,clearTimeout}=deps;\n${source}\nreturn {state,field,playForm,sourceEvidenceHTML,filtersHTML,filteredPlays,playlistView,runAction,navigate,attachVideo,bindVideo,render,setBusy,setRender(fn){render=fn;}};`)({...domain,...exporter,StudioStore:FakeStore,document,window,location,localStorage,setTimeout:()=>1,clearTimeout:()=>{}});
   let renders=0;app.setRender(async()=>{renders++;});
   return {app,records,saved,nodes,location,get renders(){return renders;},get pendingVideo(){return pendingVideo;},setGet(fn){getHook=fn;},dispatch(type,event){for(const fn of docListeners.get(type)||[])fn(event);},hashchange(){for(const fn of winListeners.get('hashchange')||[])fn();},click(action){let prevented=false;const el={dataset:{action,id:'p1'}};const event={target:{closest:s=>s==='[data-action]'?el:null},preventDefault(){prevented=true;}};for(const fn of docListeners.get('click')||[])fn(event);return prevented;}};
 }
@@ -112,4 +112,11 @@ test('raw evidence values, metric names and source records stay inert in rendere
   const h=harness(),p=fixture(),payload='<img src=x onerror=alert(1)>';
   p.plays[0].sourceEvidence={record:{metrics:{[payload]:payload},notes:payload,tracks:[],annotations:[]},metricSemantics:{gravity:payload}};
   const html=h.app.sourceEvidenceHTML(p.plays[0]);assert(!html.includes('<img'));assert(html.includes('&lt;img'));assert(html.includes('原始回合证据'));assert(html.includes('不参与 Studio 统计'));
+});
+
+
+test('player filtering separates identical names from different teams',()=>{
+ const h=harness(),p=fixture();p.plays=[{...p.plays[0],shooter:'Alex',team:'A'},{...p.plays[0],id:'p2',shooter:'Alex',team:'B'}];h.app.state.project=p;
+ const html=h.app.filtersHTML(p);assert(html.includes('Alex · A'));assert(html.includes('Alex · B'));
+ h.app.state.filter.player=domain.playerKey(p.plays[1]);assert.deepEqual(h.app.filteredPlays(p).map(p=>p.id),['p2']);
 });

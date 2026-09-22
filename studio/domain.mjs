@@ -272,6 +272,8 @@ export function parseImport(text, { format = 'json', duration = null, source = '
   return {plays,issues};
 }
 
+export function playerKey(play) { return JSON.stringify([play.team || '', play.shooter || '']); }
+
 export function summarize(plays) {
   const summary = {total:0,attempts:0,made:0,points:0,fgPct:null,efgPct:null,expectedPoints:null,xfgCount:0,reviewed:0,players:[],tags:[]};
   const players = new Map(), tags = new Map(); let threes = 0, expected = 0;
@@ -279,12 +281,13 @@ export function summarize(plays) {
     if (!record(play)) continue;
     summary.total++;
     const name = typeof play.shooter === 'string' && play.shooter.trim() ? play.shooter : 'Unknown player';
-    const player = players.get(name) || {name,attempts:0,made:0,points:0,fgPct:null};
+    const key = playerKey(play);
+    const player = players.get(key) || {name,team:play.team || '',attempts:0,made:0,points:0,fgPct:null};
     if (play.made === true || play.made === false) { summary.attempts++; player.attempts++; }
     if (play.made === true) { summary.made++; player.made++; if ([2,3].includes(play.points)) { summary.points += play.points; player.points += play.points; } if (play.points === 3) threes++; }
     if (play.reviewed === true) summary.reviewed++;
     if (finite(play.xfg) && play.xfg >= 0 && play.xfg <= 1 && [2,3].includes(play.points)) { summary.xfgCount++; expected += play.xfg * play.points; }
-    players.set(name,player);
+    players.set(key,player);
     if (typeof play.tag === 'string' && play.tag.trim()) tags.set(play.tag,(tags.get(play.tag) || 0) + 1);
   }
   if (summary.attempts) { summary.fgPct = summary.made / summary.attempts; summary.efgPct = (summary.made + .5 * threes) / summary.attempts; }

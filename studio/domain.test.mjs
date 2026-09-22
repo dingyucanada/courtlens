@@ -174,3 +174,9 @@ test('backup envelope does not reject valid project evidence at the nesting limi
   const restored=readBackup(JSON.stringify(projectBackup(p)));
   assert.deepEqual(restored.plays[0].sourceEvidence,p.plays[0].sourceEvidence);
 });
+
+
+test('same-name players on different teams retain separate shooting totals',()=>{
+ const stats=summarize([play({shooter:'Alex',team:'A',made:true,points:3}),play({id:'p2',shooter:'Alex',team:'B',made:false,points:2})]);
+ assert.equal(stats.players.length,2);assert.equal(stats.players.find(p=>p.team==='A').points,3);assert.equal(stats.players.find(p=>p.team==='B').fgPct,0);assert.equal(stats.points,3);
+});

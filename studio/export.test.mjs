@@ -110,6 +110,7 @@ test('invalid playlist references and ranges fail rather than quietly changing s
 
 test('report gives correct denominator, eFG, subset expectation, and revision', () => {
   const output = makeReport(fixture());
+  assert.match(output, /A · City/);
   assert.match(output, /50\.0%/);
   assert.match(output, /75\.0%/);
   assert.match(output, /1 命中 \/ 2 次已知结果/);
