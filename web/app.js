@@ -389,17 +389,17 @@
     if(!Number.isFinite(W)||!Number.isFinite(H)||W<=0||H<=0)return;
     root.setAttribute('viewBox',`0 0 ${W} ${H}`);
     const defs=svgEl('defs'),marker=svgEl('marker',{id:'route-arrow',viewBox:'0 0 10 10',refX:8,refY:5,markerWidth:6,markerHeight:6,orient:'auto-start-reverse'});
-    marker.append(svgEl('path',{d:'M0 0L10 5L0 10z',fill:'#d3fa68'}));defs.append(marker);root.append(defs);
+    marker.append(svgEl('path',{d:'M0 0L10 5L0 10z',fill:'#8bb6ff'}));defs.append(marker);root.append(defs);
     (p.annotations||[]).filter(a=>t>=a.start&&t<a.end&&((a.origin==='manual'&&a.frame_reviewed===true)||(tracked&&a.origin!=='manual'))).forEach(a=>{
       const pts=(a.points||[]).map(pt=>[pt[0]*W,pt[1]*H]);if(!pts.length)return;
       const title=svgEl('title',{},a.label||a.kind);
       let shape;
       if(a.kind==='zone'){
-        if(pts.length===2){const [one,two]=pts;shape=svgEl('rect',{x:Math.min(one[0],two[0]),y:Math.min(one[1],two[1]),width:Math.abs(two[0]-one[0]),height:Math.abs(two[1]-one[1]),rx:14,fill:'#d3fa68','fill-opacity':.10,stroke:'#d3fa68','stroke-opacity':.6,'stroke-width':2,'stroke-dasharray':'7 6'});}
-        else shape=svgEl('polygon',{points:pts.map(pt=>pt.join(',')).join(' '),fill:'#d3fa68','fill-opacity':.10,stroke:'#d3fa68','stroke-opacity':.6,'stroke-width':2,'stroke-dasharray':'7 6'});
-      }else if(a.kind==='arrow') shape=svgEl('polyline',{points:pts.map(pt=>pt.join(',')).join(' '),fill:'none',stroke:'#d3fa68','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round','stroke-dasharray':'10 7','marker-end':'url(#route-arrow)'});
+        if(pts.length===2){const [one,two]=pts;shape=svgEl('rect',{x:Math.min(one[0],two[0]),y:Math.min(one[1],two[1]),width:Math.abs(two[0]-one[0]),height:Math.abs(two[1]-one[1]),rx:14,fill:'#8bb6ff','fill-opacity':.10,stroke:'#8bb6ff','stroke-opacity':.6,'stroke-width':2,'stroke-dasharray':'7 6'});}
+        else shape=svgEl('polygon',{points:pts.map(pt=>pt.join(',')).join(' '),fill:'#8bb6ff','fill-opacity':.10,stroke:'#8bb6ff','stroke-opacity':.6,'stroke-width':2,'stroke-dasharray':'7 6'});
+      }else if(a.kind==='arrow') shape=svgEl('polyline',{points:pts.map(pt=>pt.join(',')).join(' '),fill:'none',stroke:'#8bb6ff','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round','stroke-dasharray':'10 7','marker-end':'url(#route-arrow)'});
       if(shape){shape.append(title);root.append(shape);}
-      if(a.label){const [x,y]=pts[0];const lx=Math.max(12,Math.min(W-210,x+10)),ly=Math.max(30,y-15);root.append(svgEl('text',{x:lx,y:ly,fill:'#e4ffab','font-size':19,class:'overlay-label'},(a.origin==='manual'?'人工 · ':'')+a.label));}
+      if(a.label){const [x,y]=pts[0];const lx=Math.max(12,Math.min(W-210,x+10)),ly=Math.max(30,y-15);root.append(svgEl('text',{x:lx,y:ly,fill:'#bcd1ee','font-size':19,class:'overlay-label'},(a.origin==='manual'?'人工 · ':'')+a.label));}
     });
     // Interpolate only between nearby samples in the same calibrated camera segment.
     (before.players||[]).forEach(player=>{
@@ -409,11 +409,11 @@
       const color=player.team==='HOU'?'#f5a17d':'#a9d5ec';
       root.append(svgEl('ellipse',{cx:x,cy:y+11,rx:21,ry:8,fill:color,'fill-opacity':.10,stroke:color,'stroke-width':2}));
       const id=String(player.id),width=Math.max(34,id.length*10+10);
-      root.append(svgEl('rect',{x:x-width/2,y:y-37,width,height:24,rx:5,fill:'#10170d','fill-opacity':.85,stroke:color,'stroke-width':1.2}));
+      root.append(svgEl('rect',{x:x-width/2,y:y-37,width,height:24,rx:5,fill:'#0d1117','fill-opacity':.85,stroke:color,'stroke-width':1.2}));
       root.append(svgEl('text',{x,y:y-20,fill:color,'font-size':15,'text-anchor':'middle','font-weight':700,'font-family':'system-ui,sans-serif'},id));
     });
     if(before.ball&&after.ball){const x=(before.ball.x+(after.ball.x-before.ball.x)*mix)*W,y=(before.ball.y+(after.ball.y-before.ball.y)*mix)*H;
-      root.append(svgEl('circle',{cx:x,cy:y,r:10,fill:'none',stroke:'#d3fa68','stroke-width':2.5}));root.append(svgEl('circle',{cx:x,cy:y,r:3,fill:'#d3fa68'}));}
+      root.append(svgEl('circle',{cx:x,cy:y,r:10,fill:'none',stroke:'#8bb6ff','stroke-width':2.5}));root.append(svgEl('circle',{cx:x,cy:y,r:3,fill:'#8bb6ff'}));}
   }
   function updateCaptions(){
     const p=analyzedPossession(),t=video.currentTime||0;
@@ -526,7 +526,7 @@
   $('playback-speed').addEventListener('change',event=>{video.playbackRate=Number(event.target.value);});
   $('overlay-toggle').addEventListener('click',()=>{state.overlay=!state.overlay;$('overlay-toggle').setAttribute('aria-checked',String(state.overlay));$('toggle-hint').textContent=state.overlay?'开启':'关闭';updateOverlayBadge();updateClock();});
   $('next-evidence').addEventListener('click',nextEvidence);
-  $('mute-button').addEventListener('click',()=>{video.muted=!video.muted;$('mute-button').setAttribute('aria-label',video.muted?'取消静音':'静音');$('mute-button').title=video.muted?'取消静音':'静音';$('mute-button').style.color=video.muted?'#657757':'';});
+  $('mute-button').addEventListener('click',()=>{video.muted=!video.muted;$('mute-button').setAttribute('aria-label',video.muted?'取消静音':'静音');$('mute-button').title=video.muted?'取消静音':'静音';$('mute-button').style.color=video.muted?'#53647b':'';});
   $('fullscreen-button').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if($('video-stage').requestFullscreen)await $('video-stage').requestFullscreen();else if(video.webkitEnterFullscreen)video.webkitEnterFullscreen();else notify('当前浏览器不支持全屏，可以扩大窗口观看。');}catch{notify('当前浏览器暂时无法进入全屏。');}});
   $('fan-mode').addEventListener('click',()=>changeAudience('fan'));$('analyst-mode').addEventListener('click',()=>changeAudience('analyst'));
   $('question-form').addEventListener('submit',event=>{event.preventDefault();ask($('question-input').value);});

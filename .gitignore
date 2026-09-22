@@ -9,3 +9,6 @@ cloud-answer.json
 workspace/
 *.sqlite3
 *.sqlite3-*
+
+site-dist/
+dist/

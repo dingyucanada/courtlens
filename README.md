@@ -1,8 +1,14 @@
 # CourtLens · 观赛透镜
 
-**本机篮球复盘工作台：保存项目、核对证据、标注画面、导出明确版本的成片。**
+**篮球证据工作台：从一个回合，看懂画面、指标与判断之间的关系。**
 
-当前为 v2 本地单用户产品。可从自己的视频建立项目，导入回合 CSV 或标准 JSON，编辑并复核回合，保存版本历史，添加人工画面标注，在后台导出。项目视频会复制到本机工作区，刷新页面或重启服务后可以继续使用。
+[打开在线演练](https://dingyucanada.github.io/courtlens/) · [下载产品与新版 PPT](https://github.com/dingyucanada/courtlens/releases/latest) · [运行说明](#启动与入口)
+
+![CourtLens 复盘工作台](docs/images/replay-nba.png)
+
+在线版免安装，提供 36 秒合成演练、3 个回合、双视角解说、同步标注、数据图表、证据问答和分析下载。完整本机版提供视频导入、SQLite 项目历史、人工标注、复核与视频导出。两者使用同一个证据分析引擎。NBA 深蓝、红、白仅作为视觉配色，CourtLens 是独立作品。
+
+当前为 v2.1，本机产品采用单用户模式。可从自己的视频建立项目，导入回合 CSV 或标准 JSON，编辑并复核回合，保存版本历史，添加人工画面标注，在后台导出。项目视频会复制到本机工作区，刷新页面或重启服务后可以继续使用。
 
 正式 NBA 赛题视频和数据尚未发放。本包的内置演练为合成素材；它检验软件流程，不证明真实 NBA 战术识别准确率。云端工具规划器尚未实调，Windows 锁分支仅做模拟测试、未实机验收。全部最终测试及浏览器结果以 [最终验收报告](docs/最终验收报告.md) 为准。
 
@@ -82,3 +88,17 @@ python3 tests/media_export_checks.py
 ```
 
 日常使用不需要 Node；它只用于前端逻辑测试。随交付包的验收证据记录实际版本、结果和独立反例。
+
+## 网站构建与 GitHub 发布
+
+`site/` 是公开演练站源码，`web/` 是本机完整产品界面。GitHub Pages 提供静态网页，本机 Python 服务和用户工作区不上传至 Pages。
+
+```sh
+python3 tools/build_site.py --output ../site-dist --presentation docs/CourtLens-product-deck.pptx
+python3 tools/test_site.py
+node --test site/logic.test.mjs
+```
+
+构建器直接调用 `core.engine` 生成双视角分析与 42 份证据回答，并核对视频 SHA-256。输出目录只允许已知发布文件；发现无关文件或符号链接会停止，防止意外上传。静态站不调用外部模型，也不上传浏览器操作。
+
+推送 `main` 后，GitHub Actions 先运行自动检查，再构建和部署 Pages。首次配置、范围和版本记录见 [GitHub 发布说明](docs/GitHub发布说明.md)。

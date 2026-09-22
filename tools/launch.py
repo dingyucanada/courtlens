@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Choose an already installed rendering runtime; never install packages silently."""
-import os,sys,subprocess
+import argparse,os,sys,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -14,5 +14,9 @@ def choose_renderer():
  return sys.executable
 if __name__=='__main__':
  renderer=choose_renderer()
- print('CourtLens 本机项目工作区：http://127.0.0.1:8765/projects.html\n停止服务请按 Ctrl+C。项目保存在 workspace 文件夹。',flush=True)
+ parser=argparse.ArgumentParser(add_help=False)
+ parser.add_argument('--port',type=int,default=8765)
+ parser.add_argument('--workspace',default=str(ROOT/'workspace'))
+ options,_=parser.parse_known_args()
+ print(f'CourtLens 本机项目工作区：http://127.0.0.1:{options.port}/projects.html\n停止服务请按 Ctrl+C。项目保存在 {options.workspace}。',flush=True)
  os.execv(sys.executable,[sys.executable,str(ROOT/'server.py'),'--render-python',renderer,*sys.argv[1:]])
